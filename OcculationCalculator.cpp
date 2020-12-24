@@ -1,6 +1,3 @@
-// OcculationCalculator.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 #include <xmmintrin.h>
 #include <immintrin.h>
@@ -19,7 +16,7 @@ struct double4
 };
 
 double4 _radii[9];
-double4 _mass[9];
+double4 _mass[9]; // mass of the planet + moons times the gravitational constant
 double4 _x[9];
 double4 _v[9];
 const char* names[9];
@@ -45,9 +42,9 @@ void SetData()
 	_x[0].data[1] = 5.889102377519094E8;
 	_x[0].data[2] = -2.335506963855098E7;
 
-	_v[0].data[0] = -4.528770171532725f;
-	_v[0].data[1] = 1.162145548819547E1f;
-	_v[0].data[2] = 9.255801942556659E-2f;
+	_v[0].data[0] = -4.528770171532725;
+	_v[0].data[1] = 1.162145548819547E1;
+	_v[0].data[2] = 9.255801942556659E-2;
 
 	// mercury
 	names[1] = "Mercury";
@@ -65,13 +62,13 @@ void SetData()
 	names[2] = "Venus";
 	_mass[2].data4 = _mm256_set1_pd( G * 4.86747E24 );
 	_radii[2].data4 = _mm256_set1_pd( 6052E3 );
-	_x[2].data[0] = 7.041720536543189E10f;
-	_x[2].data[1] = 8.299087742435262E10f;
-	_x[2].data[2] = -2.927748819523938E9f;
+	_x[2].data[0] = 7.041720536543189E10;
+	_x[2].data[1] = 8.299087742435262E10;
+	_x[2].data[2] = -2.927748819523938E9;
 
-	_v[2].data[0] = -2.681660121315567E4f;
-	_v[2].data[1] = 2.251800819839024E4f;
-	_v[2].data[2] = 1.855924201511814E3f;
+	_v[2].data[0] = -2.681660121315567E4;
+	_v[2].data[1] = 2.251800819839024E4;
+	_v[2].data[2] = 1.855924201511814E3;
 
 	// earth
 	names[3] = "Earth";
@@ -136,7 +133,7 @@ void SetData()
 	// neptune
 	names[8] = "Neptune";
 	_mass[8].data4 = _mm256_set1_pd( G * ( 102.4126E24 + 2.1487923E22 ) );
-	_radii[8].data4 = _mm256_set1_pd( 24622 );
+	_radii[8].data4 = _mm256_set1_pd( 24622E3 );
 	_x[8].data[0] = 4.239524025371338E12;
 	_x[8].data[1] = -1.449525865099807E12;
 	_x[8].data[2] = -6.785384248451066E10;
@@ -183,13 +180,13 @@ int main()
 		// update velocities
 		for ( int i = 0; i < 9; i++ )
 		{
-			// loop over planets, calculate gravitational force, update velocities
+			// loop over planets, calculate gravitational acceleration, update velocities
 			for ( int j = 0; j < 9; j++ )
 			{
 				if ( i == j ) continue;
 				__m256d distanceVector = _mm256_sub_pd( _x[j].data4, _x[i].data4 );
 				__m256d distanceCubed = GetCubedLength( distanceVector );
-				__m256d acceleration = _mm256_mul_pd( _mm256_div_pd( _mass[j].data4, distanceCubed ), distanceVector );
+				__m256d acceleration = _mm256_mul_pd( _mm256_div_pd( _mass[j].data4, distanceCubed ), distanceVector ); // normalization is done by using cubed instead of squared distance
 				_v[i].data4 = _mm256_add_pd( _v[i].data4, _mm256_mul_pd( acceleration, timestep4 ) );
 			}
 		}
