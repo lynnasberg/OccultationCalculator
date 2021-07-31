@@ -26,7 +26,7 @@ time_t currentTime;
 
 void SetData()
 {
-	for ( int i = 0; i < COUNT; i++ )
+	for (int i = 0; i < COUNT; i++)
 	{
 		_x[i].data[3] = 0;
 		_v[i].data[3] = 0;
@@ -159,7 +159,7 @@ void SetData()
 	_v[9].data[2] = -1.292465944069530E+02;
 }
 
-__m256d GetLength( __m256d a )
+__m256d GetLength(__m256d a)
 {
 	double4 d4;
 	d4.data4 = _mm256_mul_pd(a, a);
@@ -175,8 +175,8 @@ int main()
 
 	currentTime = time_t(1627682400);
 
-	float timestep = 60;
-	__m256d timestep4 = _mm256_set1_pd( timestep );
+	float timestep = 10;
+	__m256d timestep4 = _mm256_set1_pd(timestep);
 
 	std::cout << "==========================================" << std::endl;
 	std::cout << "  Welcome to the Occultation Calculator.  " << std::endl;
@@ -186,34 +186,34 @@ int main()
 	std::cout << "==========================================" << std::endl;
 	std::cout << std::endl;
 
-	for ( int step = 0; step < 1E9f; step++ )
+	while (true)
 	{
-		currentTime += time_t( timestep );
+		currentTime += time_t(timestep);
 
 		//
 		// Gravity simulation
 		//
 
 		// update velocities
-		for ( int i = 0; i < COUNT; i++ )
+		for (int i = 0; i < COUNT; i++)
 		{
 			// loop over planets, calculate gravitational acceleration, update velocities
-			for ( int j = i + 1; j < COUNT; j++ )
+			for (int j = i + 1; j < COUNT; j++)
 			{
-				__m256d distanceVector = _mm256_sub_pd( _x[j].data4, _x[i].data4 );
+				__m256d distanceVector = _mm256_sub_pd(_x[j].data4, _x[i].data4);
 				__m256d distance = GetLength(distanceVector);
 				__m256d distanceCubed = _mm256_mul_pd(distance, _mm256_mul_pd(distance, distance));
 				__m256d d = _mm256_div_pd(distanceVector, distanceCubed);
 
-				_v[i].data4 = _mm256_add_pd( _v[i].data4, _mm256_mul_pd(_mm256_mul_pd(d, _mass[j].data4), timestep4));
-				_v[j].data4 = _mm256_sub_pd( _v[j].data4, _mm256_mul_pd(_mm256_mul_pd(d, _mass[i].data4), timestep4 ));
+				_v[i].data4 = _mm256_add_pd(_v[i].data4, _mm256_mul_pd(_mm256_mul_pd(d, _mass[j].data4), timestep4));
+				_v[j].data4 = _mm256_sub_pd(_v[j].data4, _mm256_mul_pd(_mm256_mul_pd(d, _mass[i].data4), timestep4));
 			}
 		}
 
 		// update positions
-		for ( int i = 0; i < COUNT; i++ )
+		for (int i = 0; i < COUNT; i++)
 		{
-			_x[i].data4 = _mm256_add_pd( _x[i].data4, _mm256_mul_pd( _v[i].data4, timestep4 ) );
+			_x[i].data4 = _mm256_add_pd(_x[i].data4, _mm256_mul_pd(_v[i].data4, timestep4));
 			_x[i].data[3] = 0;
 		}
 
@@ -225,27 +225,29 @@ int main()
 		double angularRadii[COUNT];
 
 		// construct vectors and angular radii
-		for ( int i = 0; i < COUNT; i++ )
+		for (int i = 0; i < COUNT; i++)
 		{
-			if ( i == 3 ) continue;
-			vectors[i] = _mm256_sub_pd( _x[i].data4, _x[3].data4 );
+			if (i == 3) continue;
+			vectors[i] = _mm256_sub_pd(_x[i].data4, _x[3].data4);
 
 			// normalize vector
 			double4 distance;
-			distance.data4 = GetLength( vectors[i] );
-			vectors[i] = _mm256_div_pd( vectors[i], distance.data4 );
+			distance.data4 = GetLength(vectors[i]);
+			vectors[i] = _mm256_div_pd(vectors[i], distance.data4);
 
 			// calculate angular radius in radians
 			angularRadii[i] = 2 * asin(_radii[i].data[0] / distance.data[0]);
 		}
 
+		int occultationCount = 0;
+
 		// get angles
-		for ( int i = 0; i < COUNT; i++ )
+		for (int i = 0; i < COUNT; i++)
 		{
-			if ( i == 3 || i == 0 || i == 4 ) continue; // no occulation with earth, sun or moon
-			for ( int j = i + 1; j < COUNT; j++ )
+			if (i == 3 || i == 0 || i == 4) continue; // no occulation with earth, sun or moon
+			for (int j = i + 1; j < COUNT; j++)
 			{
-				if ( j == 3 || j == 0 || j == 4) continue; // no occultation with earth, sun or moon
+				if (j == 3 || j == 0 || j == 4) continue; // no occultation with earth, sun or moon
 				int n = i * COUNT + j;
 
 				// calculate angle between the vectors to the two planets using a dot product
@@ -256,14 +258,16 @@ int main()
 
 				double angle = acos(dot4.data[0] + dot4.data[1] + dot4.data[2]);
 
-				if ( angle < angularRadii[i] + angularRadii[j] )
+				if (angle < angularRadii[i] + angularRadii[j])
 				{
-					if ( !occultation[n] )
+					occultationCount++;
+
+					if (!occultation[n])
 					{
 						// occultation starts
 						std::cout << std::endl << std::endl;
 						std::cout << "  > Occultation between " << names[i] << " and " << names[j]
-							<< " at " << std::put_time( std::localtime( &currentTime ), "%F" )
+							<< " at " << std::put_time(std::localtime(&currentTime), "%F")
 							<< " from " << std::put_time(std::localtime(&currentTime), "%R");
 						occultation[n] = true;
 					}
@@ -279,8 +283,12 @@ int main()
 			}
 		}
 
-		float newYear = gmtime( &currentTime )->tm_year + 1900;
-		if ( newYear > year )
+		if (occultationCount > 2) {
+			std::cout << "  > Simultaneous occultation between " << occultationCount << " planets!" << std::endl;
+		}
+
+		float newYear = gmtime(&currentTime)->tm_year + 1900;
+		if (newYear > year)
 		{
 			year = newYear;
 			std::cout << year << "...";
