@@ -20,7 +20,6 @@ double4 _radii[COUNT];
 double4 _mass[COUNT]; // mass of the planet + moons times the gravitational constant
 double4 _x[COUNT];
 double4 _v[COUNT];
-double4 _a[COUNT];
 const char* names[COUNT];
 
 time_t currentTime;
@@ -197,15 +196,18 @@ int main()
 
 		// update velocities
 		for ( int i = 0; i < COUNT; i++ )
-
+		{
 			// loop over planets, calculate gravitational acceleration, update velocities
 			for ( int j = i + 1; j < COUNT; j++ )
 			{
+				//if (i == j) continue;
 				__m256d distanceVector = _mm256_sub_pd( _x[j].data4, _x[i].data4 );
 				__m256d distance = GetLength(distanceVector);
 				__m256d distanceCubed = _mm256_mul_pd(distance, _mm256_mul_pd(distance, distance));
 				__m256d d = _mm256_div_pd(distanceVector, distanceCubed);
 
+				//_a[i].data4 = _mm256_mul_pd(_mm256_mul_pd(d, _mass[j].data4), timestep4);
+				//_v[i].data4 = _mm256_add_pd( _v[i].data4, _mm256_mul_pd(_a[i].data4, timestep4 ) );
 				_v[i].data4 = _mm256_add_pd( _v[i].data4, _mm256_mul_pd(_mm256_mul_pd(d, _mass[j].data4), timestep4));
 				_v[j].data4 = _mm256_sub_pd( _v[j].data4, _mm256_mul_pd(_mm256_mul_pd(d, _mass[i].data4), timestep4 ));
 			}
